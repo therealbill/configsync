@@ -14,7 +14,8 @@ import (
 )
 
 type LaunchConfig struct {
-	SentinelConfigFile string
+	SentinelConfigFile    string
+	SyncableDirectiveList string
 }
 
 // SentinelPodConfig is a struct carrying information about a Pod's config as
@@ -52,23 +53,29 @@ func init() {
 
 	// initialize logging
 	logger, _ = syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, "configsync")
-
-	syncableDirectives = []string{"hash-max-ziplist-entries",
-		"hash-max-ziplist-value",
-		"list-max-ziplist-entries",
-		"list-max-ziplist-value",
-		"zset-max-ziplist-entries",
-		"zset-max-ziplist-value",
-		"save",
-		"appendfsync",
-		"appendonly",
-		"no-appendfsync-on-rewrite",
-		"auto-aof-rewrite-percentage",
-		"auto-aof-rewrite-min-size",
-		"aof-rewrite-incremental-fsync",
-	}
-
 	err := envconfig.Process("configsync", &config)
+	fmt.Printf("syncableList: %+v\n", config.SyncableDirectiveList)
+	if config.SyncableDirectiveList == "" {
+		syncableDirectives = []string{"hash-max-ziplist-entries",
+			"hash-max-ziplist-value",
+			"list-max-ziplist-entries",
+			"list-max-ziplist-value",
+			"zset-max-ziplist-entries",
+			"zset-max-ziplist-value",
+			"save",
+			"appendfsync",
+			"appendonly",
+			"no-appendfsync-on-rewrite",
+			"auto-aof-rewrite-percentage",
+			"auto-aof-rewrite-min-size",
+			"aof-rewrite-incremental-fsync",
+		}
+	} else {
+		for _, item := range strings.Split(config.SyncableDirectiveList, ",") {
+			syncableDirectives = append(syncableDirectives, item)
+		}
+	}
+	fmt.Printf("directives to sync: %+v\n", syncableDirectives)
 	if err != nil {
 		logger.Crit(err.Error())
 		os.Exit(1)
@@ -112,7 +119,6 @@ func extractSentinelDirective(entries []string) error {
 		logger.Warning(err.Error())
 		return nil
 	}
-	return nil
 }
 
 // LoadSentinelConfigFile loads the local config file pulled from the
