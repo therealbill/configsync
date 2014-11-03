@@ -16,6 +16,8 @@ this can be changed via the environment variable
 Likewise `CONFIGSYNC_SYNCABLEDIRECTIVELIST` can be a single directive or
 a comma separated list of directives to synchronize to the slave(s).
 
+If you want to run it in "pretend" mode: `CONFIGSYNC_PRETENDONLY=true`
+
 # Anticipated Usage
 
 Generally this is expected to be put into a cron table to run
