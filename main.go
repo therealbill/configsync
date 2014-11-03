@@ -16,6 +16,7 @@ import (
 type LaunchConfig struct {
 	SentinelConfigFile    string
 	SyncableDirectiveList string
+	PretendOnly           bool
 }
 
 // SentinelPodConfig is a struct carrying information about a Pod's config as
@@ -193,15 +194,19 @@ func synchronizeConfigs(pc SentinelPodConfig) error {
 	}
 	for _, s := range info.Replication.Slaves {
 		sadd := fmt.Sprintf("%s:%d", s.IP, s.Port)
-		logger.Info(fmt.Sprintf("Sync: %s => %s", address, sadd))
-		slave, err := client.DialWithConfig(&client.DialConfig{Address: sadd, Password: pc.AuthToken})
-		if err != nil {
-			logger.Warning("Unable to connecte to slave: " + err.Error())
-		}
-		for k, v := range directivesToSync {
-			err := slave.ConfigSet(k, v)
+		if config.PretendOnly {
+			logger.Info(fmt.Sprintf("WOULD Sync: %s => %s '%+v'", address, sadd, directivesToSync))
+		} else {
+			logger.Info(fmt.Sprintf("Sync: %s => %s", address, sadd))
+			slave, err := client.DialWithConfig(&client.DialConfig{Address: sadd, Password: pc.AuthToken})
 			if err != nil {
-				logger.Warning("Err on config set: " + err.Error())
+				logger.Warning("Unable to connecte to slave: " + err.Error())
+			}
+			for k, v := range directivesToSync {
+				err := slave.ConfigSet(k, v)
+				if err != nil {
+					logger.Warning("Err on config set: " + err.Error())
+				}
 			}
 		}
 	}
